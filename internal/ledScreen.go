@@ -138,8 +138,9 @@ func (screen LedScreen) WriteData(str string, status byte) {
 	length := len(data)
 	if length > 27 {
 		screen.flow(data, status)
+	} else {
+		screen.static(data, status)
 	}
-	screen.static(data, status)
 }
 
 // 滚动显示
@@ -156,7 +157,7 @@ func (screen LedScreen) flow(data []byte, status byte) {
 			fmt.Printf("something error: %v\n", err)
 			return
 		}
-		time.Sleep(96 * time.Millisecond)
+		time.Sleep(128 * time.Millisecond)
 	}
 }
 
