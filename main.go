@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -41,6 +42,7 @@ func mainLoop(screen athenaLed.LedScreen) {
 	options := flag.String("option", "date timeBlink", "led option")
 	value := flag.String("value", "abcdefghijklmnopqrstuvwxyz0123456789+-*/=.:：℃", "led content")
 	url := flag.String("url", "https://www.baidu.com/", "api url for get content")
+	tempFlag := flag.String("tempFlag", "4", "show temp for something,0-6")
 	flag.Parse()
 
 	var statusFlag byte = 0
@@ -97,6 +99,13 @@ func mainLoop(screen athenaLed.LedScreen) {
 					}
 					time.Sleep(1 * time.Second)
 				}
+			case "temp":
+				tempString := getTemp(*tempFlag)
+				if strings.EqualFold(tempString, "") {
+					continue
+				}
+				screen.WriteData(tempString, status)
+				time.Sleep(time.Duration(*timeSwitch) * time.Second)
 			case "string":
 				screen.WriteData(*value, status)
 				time.Sleep(time.Duration(*timeSwitch) * time.Second)
@@ -117,6 +126,38 @@ func mainLoop(screen athenaLed.LedScreen) {
 			}
 		}
 	}
+}
+
+func getTemp(tempFlags string) string {
+	value := ""
+	for i := 0; i <= 6; i++ {
+		if !strings.Contains(tempFlags, strconv.Itoa(i)) {
+			continue
+		}
+
+		typePath := fmt.Sprintf("/sys/class/thermal/thermal_zone%d/type", i)
+		tempPath := fmt.Sprintf("/sys/class/thermal/thermal_zone%d/temp", i)
+
+		zoneType, err := os.ReadFile(typePath)
+		if err != nil {
+			fmt.Printf("getTemp type from %s error: %v\n", typePath, err)
+			continue
+		}
+		tempData, err := os.ReadFile(tempPath)
+		if err != nil {
+			fmt.Printf("getTemp value from %s error: %v\n", tempPath, err)
+			continue
+		}
+
+		tempStr := strings.TrimSpace(string(tempData))
+		tempInt, err := strconv.Atoi(tempStr)
+		if err != nil {
+			fmt.Printf("getTemp strconv.Atoi error: %v\n", tempStr)
+			continue
+		}
+		value += fmt.Sprintf("%s:%.1f℃   ", strings.ReplaceAll(strings.TrimSpace(string(zoneType)), "-thermal", ""), float64(tempInt)/1000.0)
+	}
+	return value
 }
 
 func timeFormat(zoneName, layout string) string {
