@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	low  = '0'
-	high = '1'
+	low  = 0x00
+	high = 0x01
 
 	// 显示模式
 	command1 byte = 0b00000011
@@ -91,7 +91,8 @@ func (screen ledScreenUnit) unExport(pin int) error {
 	if err == nil {
 		cmd := exec.Command("sh", "-c", "echo "+strconv.Itoa(pin)+" > /sys/class/gpio/unexport")
 		return cmd.Run()
-	} else if os.IsNotExist(err) {
+	}
+	if os.IsNotExist(err) {
 		return nil
 	}
 	return err
@@ -140,11 +141,7 @@ func (screen ledScreenUnit) doWriteData(stb int, command byte, values []byte) er
 			return err
 		}
 	}
-	err = screen.doWriteBit(stb, high)
-	if err != nil {
-		return err
-	}
-	return nil
+	return screen.doWriteBit(stb, high)
 }
 
 func (screen ledScreenUnit) writeCommandByte(value byte) error {
@@ -200,12 +197,11 @@ func (screen ledScreenUnit) doWriteBit(gpioNum int, bit byte) error {
 		fileDict[gpioNum] = fileOpen
 		file = fileOpen
 	}
-	var value byte
+	var err error
 	if bit == high {
-		value = '1'
+		_, err = file.Write([]byte("1"))
 	} else {
-		value = '0'
+		_, err = file.Write([]byte("0"))
 	}
-	_, err := file.Write([]byte{value})
 	return err
 }
