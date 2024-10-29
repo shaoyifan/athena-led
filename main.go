@@ -37,7 +37,7 @@ func main() {
 
 func mainLoop(screen athenaLed.LedScreen) {
 	statusVar := flag.String("status", "", "led status")
-	timeSwitch := flag.Int("seconds", 5, "led switching time (second)")
+	seconds := flag.Int("seconds", 5, "led switching time (second)")
 	lightLevel := flag.Int("lightLevel", 5, "led light level 0-7")
 	options := flag.String("option", "date timeBlink", "led option")
 	value := flag.String("value", "abcdefghijklmnopqrstuvwxyz0123456789+-*/=.:：℃", "led content")
@@ -61,7 +61,7 @@ func mainLoop(screen athenaLed.LedScreen) {
 
 	status = statusFlag << 4 >> 4
 
-	fmt.Println(*statusVar, *timeSwitch, *lightLevel, *options, *value, *url)
+	fmt.Println(*statusVar, *seconds, *lightLevel, *options, *value, *url)
 	err := screen.Power(true, byte(*lightLevel))
 	if err != nil {
 		fmt.Printf("SetPower error: %v\n", err)
@@ -77,13 +77,13 @@ func mainLoop(screen athenaLed.LedScreen) {
 			case "date":
 				formattedTime := timeFormat(zoneName, "01-02")
 				screen.WriteData(formattedTime, status)
-				time.Sleep(time.Duration(*timeSwitch) * time.Second)
+				time.Sleep(time.Duration(*seconds) * time.Second)
 			case "time":
 				formattedTime := timeFormat(zoneName, "15:04")
 				screen.WriteData(formattedTime, status)
-				time.Sleep(time.Duration(*timeSwitch) * time.Second)
+				time.Sleep(time.Duration(*seconds) * time.Second)
 			case "timeBlink":
-				ctx, cancel := context.WithTimeout(context.Background(), time.Duration(*timeSwitch)*time.Second)
+				ctx, cancel := context.WithTimeout(context.Background(), time.Duration(*seconds)*time.Second)
 				for {
 					select {
 					case <-ctx.Done():
@@ -105,10 +105,10 @@ func mainLoop(screen athenaLed.LedScreen) {
 					continue
 				}
 				screen.WriteData(tempString, status)
-				time.Sleep(time.Duration(*timeSwitch) * time.Second)
+				time.Sleep(time.Duration(*seconds) * time.Second)
 			case "string":
 				screen.WriteData(*value, status)
-				time.Sleep(time.Duration(*timeSwitch) * time.Second)
+				time.Sleep(time.Duration(*seconds) * time.Second)
 			case "getByUrl":
 				resp, err := http.Get(*url)
 				if err != nil {
@@ -122,7 +122,7 @@ func mainLoop(screen athenaLed.LedScreen) {
 					continue optionLoop
 				}
 				screen.WriteData(string(body), status)
-				time.Sleep(time.Duration(*timeSwitch) * time.Second)
+				time.Sleep(time.Duration(*seconds) * time.Second)
 			}
 		}
 	}
