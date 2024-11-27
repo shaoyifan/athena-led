@@ -72,7 +72,11 @@ func getGpioPin() (stbLeft, stbRight, clk, dio int, err error) {
 	for scanner.Scan() {
 		line := scanner.Text()
 		if strings.Contains(line, "DISTRIB_ID=") {
-			distribId = strings.TrimSpace(strings.Split(line, "'")[1])
+			if strings.Contains(line, "'") {
+				distribId = strings.TrimSpace(strings.Split(line, "'")[1])
+			} else {
+				distribId = strings.TrimSpace(strings.Split(line, "=")[1])
+			}
 		}
 	}
 	if err = scanner.Err(); err != nil {
