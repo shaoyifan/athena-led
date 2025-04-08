@@ -4,9 +4,11 @@ import (
 	athenaLed "athenaLed/internal"
 	"bufio"
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"os"
 	"os/signal"
@@ -110,22 +112,90 @@ func mainLoop(screen athenaLed.LedScreen) {
 				screen.WriteData(*value, status)
 				time.Sleep(time.Duration(*seconds) * time.Second)
 			case "getByUrl":
-				resp, err := http.Get(*url)
+				content, err := getByUrl(*url)
 				if err != nil {
 					fmt.Println("Error:", err)
 					continue optionLoop
 				}
-				body, err := io.ReadAll(resp.Body)
-				_ = resp.Body.Close()
-				if err != nil {
-					fmt.Println("Error reading response body:", err)
-					continue optionLoop
-				}
-				screen.WriteData(string(body), status)
+				screen.WriteData(string(content), status)
 				time.Sleep(time.Duration(*seconds) * time.Second)
 			}
 		}
 	}
+}
+
+func getByUrl(url string) (string, error) {
+	// 如果 URL 是 netdata，则请求特定的 API
+	if strings.Contains(url, "netdata") {
+		// 请求 netdata 的 API
+		resp, err := http.Get("http://10.0.0.1:19999/api/v1/allmetrics?format=json&filter=net.wan")
+		if err != nil {
+			return "", fmt.Errorf("error fetching netdata URL: %v", err)
+		}
+		defer resp.Body.Close()
+
+		// 读取响应体
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return "", fmt.Errorf("error reading netdata response body: %v", err)
+		}
+
+		// 解析 JSON 数据
+		type Dimension struct {
+			Value float64 `json:"value"`
+		}
+
+		type Dimensions struct {
+			Received Dimension `json:"received"`
+			Sent     Dimension `json:"sent"`
+		}
+
+		type NetWan struct {
+			Dimensions Dimensions `json:"dimensions"`
+		}
+
+		type NetdataResponse struct {
+			NetWan NetWan `json:"net.wan"`
+		}
+
+		var netdataResponse NetdataResponse
+		err = json.Unmarshal(body, &netdataResponse)
+		if err != nil {
+			return "", fmt.Errorf("error parsing netdata JSON: %v", err)
+		}
+
+		// 随机选择 send 或 received
+		rand.Seed(time.Now().UnixNano())
+		var selectedValue float64
+		var prefix string
+		if rand.Intn(2) == 0 {
+			selectedValue = netdataResponse.NetWan.Dimensions.Received.Value
+			prefix = "↗"
+		} else {
+			selectedValue = netdataResponse.NetWan.Dimensions.Sent.Value
+			prefix = "↘"
+		}
+
+		// 将值从 kilobits/s 转换为 MB/s
+		selectedValueMBps := selectedValue / 8000.0
+
+		// 返回转换后的值
+		return fmt.Sprintf("%s%.2f MB/s", prefix, selectedValueMBps), nil
+	}
+
+	// 默认处理其他 URL
+	resp, err := http.Get(url)
+	if err != nil {
+		return "", fmt.Errorf("error fetching URL: %v", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("error reading response body: %v", err)
+	}
+
+	return string(body), nil
 }
 
 func getTemp(tempFlags string) string {
