@@ -8,7 +8,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"math/rand"
+	"math"
 	"net/http"
 	"os"
 	"os/signal"
@@ -165,22 +165,28 @@ func getByUrl(url string) (string, error) {
 		}
 
 		// 随机选择 send 或 received
-		rand.Seed(time.Now().UnixNano())
+		// rand.Seed(time.Now().UnixNano())
 		var selectedValue float64
 		var prefix string
-		if rand.Intn(2) == 0 {
-			selectedValue = netdataResponse.NetWan.Dimensions.Received.Value
-			prefix = "↗"
-		} else {
-			selectedValue = netdataResponse.NetWan.Dimensions.Sent.Value
-			prefix = "↘"
+		// if rand.Intn(2) == 0 {
+		selectedValue = netdataResponse.NetWan.Dimensions.Received.Value
+		prefix = "↘"
+		// } else {
+		// 	selectedValue = netdataResponse.NetWan.Dimensions.Sent.Value
+		// 	prefix = "↗"
+		// }
+
+		// 将值从 kilobits/s 转换为 KB/s
+		selectedValueKBps := math.Abs(selectedValue / 8.0)
+
+		// 判断是否超过 1000 KB/s
+		if selectedValueKBps > 999 {
+			// 转换为 MB/s
+			selectedValueMBps := selectedValueKBps / 1024.0
+			return fmt.Sprintf("%s%.1fM", prefix, selectedValueMBps), nil
 		}
-
-		// 将值从 kilobits/s 转换为 MB/s
-		selectedValueMBps := selectedValue / 8000.0
-
-		// 返回转换后的值
-		return fmt.Sprintf("%s%.2f MB/s", prefix, selectedValueMBps), nil
+		// 返回值为 KB/s
+		return fmt.Sprintf("%s%dK", prefix, int(selectedValueKBps)), nil
 	}
 
 	// 默认处理其他 URL
