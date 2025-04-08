@@ -211,14 +211,14 @@ func getTemp(tempFlags string) string {
 			continue
 		}
 
-		typePath := fmt.Sprintf("/sys/class/thermal/thermal_zone%d/type", i)
+		// typePath := fmt.Sprintf("/sys/class/thermal/thermal_zone%d/type", i)
 		tempPath := fmt.Sprintf("/sys/class/thermal/thermal_zone%d/temp", i)
 
-		zoneType, err := os.ReadFile(typePath)
-		if err != nil {
-			fmt.Printf("getTemp type from %s error: %v\n", typePath, err)
-			continue
-		}
+		// zoneType, err := os.ReadFile(typePath)
+		// if err != nil {
+		// 	fmt.Printf("getTemp type from %s error: %v\n", typePath, err)
+		// 	continue
+		// }
 		tempData, err := os.ReadFile(tempPath)
 		if err != nil {
 			fmt.Printf("getTemp value from %s error: %v\n", tempPath, err)
@@ -231,7 +231,8 @@ func getTemp(tempFlags string) string {
 			fmt.Printf("getTemp strconv.Atoi error: %v\n", tempStr)
 			continue
 		}
-		value += fmt.Sprintf("%s:%.1f℃   ", strings.ReplaceAll(strings.TrimSpace(string(zoneType)), "-thermal", ""), float64(tempInt)/1000.0)
+		// value += fmt.Sprintf("%s:%.1f℃   ", strings.ReplaceAll(strings.TrimSpace(string(zoneType)), "-thermal", ""), float64(tempInt)/1000.0)
+		value += fmt.Sprintf("%.1f℃ ", float64(tempInt)/1000.0)
 	}
 	return value
 }
