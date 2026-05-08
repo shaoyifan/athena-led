@@ -131,9 +131,11 @@ async fn fetch_netdata_traffic(client: &Client, direction: &str) -> Option<Strin
     let raw_value = json["net.wan"]["dimensions"][direction]["value"]
         .as_f64()?;
 
-    // Netdata 默认通常为 kilobits/s
-    let kb_s = raw_value / 8.0;
+    // Netdata sent 方向值为负数，取绝对值
+    // 单位：raw_value 为 kilobits/s，/8 转 KB/s
+    let kb_s = (raw_value / 8.0).abs();
 
+    // 阈值1000保证数字不超过3位，转换用1024（1M = 1024K）
     if kb_s >= 1000.0 {
         Some(format!("{:.1}M", kb_s / 1024.0))
     } else {
