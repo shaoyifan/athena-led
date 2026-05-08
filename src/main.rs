@@ -153,7 +153,7 @@ async fn process_options(
             "date" => {
                 let time = Local::now().format("%m-%d").to_string();
 
-                screen.write_data(time.as_bytes(), status)?;
+                screen.write_data(&time, status)?;
 
                 time::sleep(Duration::from_secs(args.seconds)).await;
             }
@@ -161,7 +161,7 @@ async fn process_options(
             "time" => {
                 let time = Local::now().format("%H:%M").to_string();
 
-                screen.write_data(time.as_bytes(), status)?;
+                screen.write_data(&time, status)?;
 
                 time::sleep(Duration::from_secs(args.seconds)).await;
             }
@@ -181,7 +181,7 @@ async fn process_options(
                         time = time.replace(':', "  ");
                     }
 
-                    screen.write_data(time.as_bytes(), status)?;
+                    screen.write_data(&time, status)?;
 
                     time_flag = !time_flag;
 
@@ -192,7 +192,7 @@ async fn process_options(
             "temp" => {
                 if let Some(temp) = get_temp(&args.temp_flag)? {
 
-                    screen.write_data(temp.as_bytes(), status)?;
+                    screen.write_data(&temp, status)?;
 
                     time::sleep(Duration::from_secs(args.seconds)).await;
                 }
@@ -205,14 +205,14 @@ async fn process_options(
                     if let Some(display_text) =
                         fetch_netdata_traffic(client).await {
 
-                        screen.write_data(display_text.as_bytes(), status)?;
+                        screen.write_data(&display_text, status)?;
 
                         time::sleep(Duration::from_secs(args.seconds)).await;
                     }
 
                 } else {
 
-                    screen.write_data(args.value.as_bytes(), status)?;
+                    screen.write_data(&args.value, status)?;
 
                     time::sleep(Duration::from_secs(args.seconds)).await;
                 }
@@ -224,7 +224,7 @@ async fn process_options(
 
                     if let Ok(text) = resp.text().await {
 
-                        screen.write_data(text.as_bytes(), status)?;
+                        screen.write_data(&text, status)?;
 
                         time::sleep(Duration::from_secs(args.seconds)).await;
                     }
