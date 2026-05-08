@@ -120,23 +120,24 @@ async fn main() -> Result<()> {
 }
 
 /// 获取并格式化 Netdata 流量数据
-async fn fetch_netdata_traffic(client: &Client) -> Option<String> {
+/// direction: "received" 下载， "sent" 上传
+async fn fetch_netdata_traffic(client: &Client, direction: &str) -> Option<String> {
     let url = "http://10.0.0.1:19999/api/v1/allmetrics?format=json&filter=net.wan";
 
     let resp = client.get(url).send().await.ok()?;
 
     let json: Value = resp.json().await.ok()?;
 
-    let raw_value = json["net.wan"]["dimensions"]["received"]["value"]
+    let raw_value = json["net.wan"]["dimensions"][direction]["value"]
         .as_f64()?;
 
     // Netdata 默认通常为 kilobits/s
     let kb_s = raw_value / 8.0;
 
     if kb_s >= 1000.0 {
-        Some(format!("↘{:.1}M", kb_s / 1024.0))
+        Some(format!("{:.1}M", kb_s / 1024.0))
     } else {
-        Some(format!("↘{:.0}K", kb_s))
+        Some(format!("{:.0}K", kb_s))
     }
 }
 
@@ -200,13 +201,36 @@ async fn process_options(
 
             "string" => {
 
-                if args.value == "netdata" {
+                if args.value == "netdata0" {
+                    // 循环显示上传和下载
+                    let start = time::Instant::now();
+                    let mut show_download = true;
 
-                    if let Some(display_text) =
-                        fetch_netdata_traffic(client).await {
+                    while start.elapsed() < Duration::from_secs(args.seconds) {
+                        let direction = if show_download { "received" } else { "sent" };
+                        let label = if show_download { "↘" } else { "↗" };
+                        let current_status = if show_download { 8 } else { 4 };
+                        if let Some(speed) = fetch_netdata_traffic(client, direction).await {
+                            let display_text = format!("{}:{}", label, speed);
+                            screen.write_data(&display_text, current_status)?;
+                        }
+                        show_download = !show_download;
+                        time::sleep(Duration::from_secs(1)).await;
+                    }
 
-                        screen.write_data(&display_text, status)?;
+                } else if args.value == "netdata1" {
+                    // 只显示下载
+                    if let Some(speed) = fetch_netdata_traffic(client, "received").await {
+                        let display_text = format!("↘:{}", speed);
+                        screen.write_data(&display_text, 8)?;
+                        time::sleep(Duration::from_secs(args.seconds)).await;
+                    }
 
+                } else if args.value == "netdata-1" {
+                    // 只显示上传
+                    if let Some(speed) = fetch_netdata_traffic(client, "sent").await {
+                        let display_text = format!("↗:{}", speed);
+                        screen.write_data(&display_text, 4)?;
                         time::sleep(Duration::from_secs(args.seconds)).await;
                     }
 
