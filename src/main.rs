@@ -134,9 +134,9 @@ async fn fetch_netdata_traffic(client: &Client) -> Option<String> {
     let kb_s = raw_value / 8.0;
 
     if kb_s >= 1000.0 {
-        Some(format!("{:.1}MB/s", kb_s / 1024.0))
+        Some(format!("{:.1}M", kb_s / 1024.0))
     } else {
-        Some(format!("{:.0}KB/s", kb_s))
+        Some(format!("{:.0}K", kb_s))
     }
 }
 
@@ -178,7 +178,7 @@ async fn process_options(
                         .to_string();
 
                     if time_flag {
-                        time = time.replace(':', " ");
+                        time = time.replace(':', "  ");
                     }
 
                     screen.write_data(time.as_bytes(), status)?;
