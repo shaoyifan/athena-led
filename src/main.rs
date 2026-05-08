@@ -9,6 +9,7 @@ use tokio::signal::unix::{signal, SignalKind};
 use tokio::time;
 use std::env;
 use std::fs;
+use serde_json::Value;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -113,6 +114,32 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
+/// 获取并格式化 Netdata 的流量数据
+async fn fetch_netdata_traffic() -> Option<String> {
+    let url = "http://10.0.0.1:19999/api/v1/allmetrics?format=json&filter=net.wan";
+    
+    // 1. 发起请求
+    let resp = reqwest::get(url).await.ok()?;
+    let json: Value = resp.json().await.ok()?;
+
+    // 2. 提取数值: net.wan -> dimensions -> received -> value
+    let raw_value = json["net.wan"]["dimensions"]["received"]["value"].as_f64()?;
+
+    // 3. 单位转换
+    // Netdata 默认单位通常是 kilobits/s
+    // 转换为 KB/s (1 byte = 8 bits)
+    let kb_s = raw_value / 8.0;
+
+    // 4. 格式化输出
+    if kb_s >= 1000.0 {
+        // 超过 1000 KB/s 则转为 MB/s，保留一位小数
+        Some(format!("{:.1}MB/s", kb_s / 1024.0))
+    } else {
+        // 保留整数
+        Some(format!("{:.0}KB/s", kb_s))
+    }
+}
+
 async fn process_options(screen: &mut led_screen::LedScreen, args: &Args, status: u8) -> Result<()> {
     for option in args.option.split_whitespace() {
         match option {
@@ -133,7 +160,6 @@ async fn process_options(screen: &mut led_screen::LedScreen, args: &Args, status
                 let mut time_flag = false;
                 while start.elapsed() < Duration::from_secs(args.seconds) {
                     let time = Local::now().format("%H:%M").to_string();
-                    let mut spaced_time = time.chars().map(|c| c.to_string()).collect::<Vec<_>>().join(" ");
                     if time_flag {
                         spaced_time = spaced_time.replace(':', " ");
                     }
@@ -149,7 +175,13 @@ async fn process_options(screen: &mut led_screen::LedScreen, args: &Args, status
                 }
             }
             "string" => {
-                screen.write_data(args.value.as_bytes(), status)?;
+                if args.value == "netdata" {
+                    if let Some(display_text) = fetch_netdata_traffic().await {
+                        screen.write_data(display_text.as_bytes(), status)?;
+                    }
+                } else {
+                    screen.write_data(args.value.as_bytes(), status)?;
+                }
                 time::sleep(Duration::from_secs(args.seconds)).await;
             }
             "getByUrl" => {
@@ -178,18 +210,13 @@ fn get_temp(temp_flags: &str) -> Result<Option<String>> {
             continue;
         }
         
-        let type_path = format!("/sys/class/thermal/thermal_zone{}/type", i);
         let temp_path = format!("/sys/class/thermal/thermal_zone{}/temp", i);
         
-        if let Ok(zone_type) = std::fs::read_to_string(&type_path) {
-            if let Ok(temp_str) = std::fs::read_to_string(&temp_path) {
-                if let Ok(temp) = temp_str.trim().parse::<f64>() {
-                    let zone_type = zone_type.trim().replace("-thermal", "");
-                    let spaced_zone_type = zone_type.chars().map(|c| c.to_string()).collect::<Vec<_>>().join(" ");
-                    let temp_char= (temp / 1000.0).round().to_string();
-                    let spaced_temp = temp_char.chars().map(|c| c.to_string()).collect::<Vec<_>>().join(" ");
-                    result.push_str(&format!("{} : {}", spaced_zone_type, spaced_temp));
-                }
+        if let Ok(temp_str) = std::fs::read_to_string(&temp_path) {
+            if let Ok(temp) = temp_str.trim().parse::<f64>() {
+                // 核心修改：保留 1 位小数 + 加上 ℃
+                let temp_celsius = temp / 1000.0;
+                result.push_str(&format!("{:.1}℃", temp_celsius));
             }
         }
     }
