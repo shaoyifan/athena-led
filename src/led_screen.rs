@@ -59,7 +59,7 @@ impl LedScreen {
     pub fn write_data(&mut self, text: &str, status: u8) -> Result<()> {
         let mut display_data = Vec::new();
 
-        for ch in text.chars() {
+        for ch in text.to_uppercase().chars() {
             if let Some(bytes) = CHAR_DICT.get(&ch) {
                 display_data.extend_from_slice(bytes);
             }

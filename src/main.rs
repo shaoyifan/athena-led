@@ -201,7 +201,7 @@ async fn process_options(
 
             "string" => {
 
-                if args.value == "netdata0" {
+                if args.value == "ud" {
                     // 循环显示上传和下载
                     let start = time::Instant::now();
                     let mut show_download = true;
@@ -210,26 +210,32 @@ async fn process_options(
                         let direction = if show_download { "received" } else { "sent" };
                         let label = if show_download { "↘" } else { "↗" };
                         let current_status = if show_download { 8 } else { 4 };
-                        if let Some(speed) = fetch_netdata_traffic(client, direction).await {
-                            let display_text = format!("{}:{}", label, speed);
-                            screen.write_data(&display_text, current_status)?;
+                        match fetch_netdata_traffic(client, direction).await {
+                            Some(speed) => {
+                                let display_text = format!("{}{}", label, speed);
+                                let _ = screen.write_data(&display_text, current_status);
+                            }
+                            None => {
+                                // 获取失败时显示横线，避免黑屏
+                                let _ = screen.write_data("--", current_status);
+                            }
                         }
                         show_download = !show_download;
                         time::sleep(Duration::from_secs(1)).await;
                     }
 
-                } else if args.value == "netdata1" {
+                } else if args.value == "d" {
                     // 只显示下载
                     if let Some(speed) = fetch_netdata_traffic(client, "received").await {
-                        let display_text = format!("↘:{}", speed);
+                        let display_text = format!("↘{}", speed);
                         screen.write_data(&display_text, 8)?;
                         time::sleep(Duration::from_secs(args.seconds)).await;
                     }
 
-                } else if args.value == "netdata-1" {
+                } else if args.value == "u" {
                     // 只显示上传
                     if let Some(speed) = fetch_netdata_traffic(client, "sent").await {
-                        let display_text = format!("↗:{}", speed);
+                        let display_text = format!("↗{}", speed);
                         screen.write_data(&display_text, 4)?;
                         time::sleep(Duration::from_secs(args.seconds)).await;
                     }
