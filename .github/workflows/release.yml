@@ -1,0 +1,151 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (leave empty to use Makefile version)'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-docker-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    name: Cleanup Old Release
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Delete existing release if exists
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [[ -n "${{ inputs.version }}" ]]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION=$(grep '^VERSION' Makefile | awk '{print $2}')
+          fi
+          gh release delete v$VERSION --yes || true
+          sleep 2
+
+  build:
+    name: Build Release (Docker)
+    runs-on: ubuntu-latest
+    needs: [cleanup]
+    if: |
+      always() &&
+      (needs.cleanup.result == 'success' || needs.cleanup.result == 'skipped')
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-musl
+            name: x86_64-musl
+          - target: aarch64-unknown-linux-musl
+            name: aarch64-musl
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cross
+        run: |
+          cargo install cross --locked
+
+      - name: Extract version
+        id: version
+        run: |
+          if [[ -n "${{ inputs.version }}" ]]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION=$(grep '^VERSION' Makefile | awk '{print $2}')
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Build for ${{ matrix.name }}
+        run: |
+          mkdir -p dist
+          cross build --release --target ${{ matrix.target }}
+
+      - name: Create package
+        run: |
+          TARGET_DIR="target/${{ matrix.target }}/release"
+          TARGET_NAME="athena-led-${{ matrix.name }}-v${{ steps.version.outputs.version }}"
+          cd "$TARGET_DIR"
+          tar -czf "$TARGET_NAME.tar.gz" "athena-led"
+          sha256sum "$TARGET_NAME.tar.gz" > "$TARGET_NAME.tar.gz.sha256"
+          cp athena-led "$GITHUB_WORKSPACE/dist/${TARGET_NAME}"
+          mv "$TARGET_NAME.tar.gz" "$GITHUB_WORKSPACE/dist/"
+          mv "$TARGET_NAME.tar.gz.sha256" "$GITHUB_WORKSPACE/dist/"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: athena-led-${{ matrix.name }}-v${{ steps.version.outputs.version }}
+          path: dist/*
+          retention-days: 1
+
+  release:
+    name: Create Release
+    needs: [build]
+    runs-on: ubuntu-latest
+    if: |
+      success() &&
+      needs.build.result == 'success'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract version
+        id: version
+        run: |
+          if [[ -n "${{ inputs.version }}" ]]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION=$(grep '^VERSION' Makefile | awk '{print $2}')
+          fi
+          TAG_NAME="v$VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Display artifacts
+        run: |
+          ls -lh artifacts/
+
+      - name: Create or update tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -f ${{ steps.version.outputs.tag_name }}
+          git push -f origin ${{ steps.version.outputs.tag_name }}
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version.outputs.tag_name }}
+          name: Release ${{ steps.version.outputs.version }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: artifacts/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
