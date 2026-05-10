@@ -10,6 +10,7 @@ use std::cell::RefCell;
 use std::env;
 use std::fs;
 use reqwest::Client;
+use tokio::time;  // 用于 time::sleep()
 
 // ==========================================
 // 网速缓存 (用于计算实时网速)
@@ -160,7 +161,9 @@ fn format_bytes_speed(bytes_per_sec: f64) -> String {
 fn read_net_bytes_for(target_iface: &str) -> (u64, u64) {
     if let Ok(content) = fs::read_to_string("/proc/net/dev") {
         for line in content.lines() {
-            if line.contains(target_iface) {
+            // 精确匹配网卡名：去除前导空格后，行以 "接口名:" 开头
+            let trimmed = line.trim_start();
+            if trimmed.starts_with(&format!("{}:", target_iface)) {
                 if let Some((_, data)) = line.split_once(':') {
                     let parts: Vec<&str> = data.split_whitespace().collect();
                     if parts.len() >= 9 {
@@ -184,24 +187,24 @@ fn get_speed_string(mode: u8, target_iface: &str) -> String {
     NET_SPEED_CACHE.with(|cache| {
         let mut cache = cache.borrow_mut();
 
-        // 获取或初始化该网卡的缓存数据
-        let (last_rx, last_tx, last_time) = cache
-            .entry(target_iface.to_string())
-            .or_insert((curr_rx, curr_tx, now));
+        // 先取出旧值（克隆，避免借用冲突）
+        let (last_rx, last_tx, last_time) = cache.get(target_iface)
+            .map(|(rx, tx, t)| (*rx, *tx, *t))
+            .unwrap_or((0, 0, now));
 
-        let duration = now.duration_since(*last_time).as_secs_f64();
+        let duration = now.duration_since(last_time).as_secs_f64();
 
-        // 防抖与异常防护
-        if duration < 0.1 || duration > 30.0 || *last_rx == 0 {
+        // 防抖与异常防护：首次调用或时间间隔异常
+        if duration < 0.1 || duration > 30.0 || last_rx == 0 {
             cache.insert(target_iface.to_string(), (curr_rx, curr_tx, now));
             return format_bytes_speed(0.0);
         }
 
         // 计算网速
         let speed = if mode == 0 {
-            (curr_rx.saturating_sub(*last_rx)) as f64 / duration  // 下载
+            (curr_rx.saturating_sub(last_rx)) as f64 / duration  // 下载
         } else {
-            (curr_tx.saturating_sub(*last_tx)) as f64 / duration  // 上传
+            (curr_tx.saturating_sub(last_tx)) as f64 / duration  // 上传
         };
 
         // 更新缓存
@@ -238,7 +241,7 @@ async fn process_options(
             }
 
             "timeBlink" => {
-                let start = time::Instant::now();
+                let start = Instant::now();
 
                 let mut time_flag = false;
 
@@ -274,7 +277,7 @@ async fn process_options(
                 if args.value == "ud" {
                     // 每个周期：下载、上传各显示一半时间
                     let half = args.seconds / 2;
-                    let start = time::Instant::now();
+                    let start = Instant::now();
 
                     while start.elapsed() < Duration::from_secs(args.seconds) {
                         // 显示下载
