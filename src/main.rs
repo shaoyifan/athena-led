@@ -1,16 +1,23 @@
 mod led_screen;
 mod char_dict;
 
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use anyhow::{Result, Context};
 use chrono::Local;
 use clap::Parser;
-use tokio::signal::unix::{signal, SignalKind};
-use tokio::time;
+use std::collections::HashMap;
+use std::cell::RefCell;
 use std::env;
 use std::fs;
-use serde_json::Value;
 use reqwest::Client;
+
+// ==========================================
+// 网速缓存 (用于计算实时网速)
+// ==========================================
+// Key: 网卡名, Value: (上次RX字节数, 上次TX字节数, 上次记录时间)
+thread_local! {
+    static NET_SPEED_CACHE: RefCell<HashMap<String, (u64, u64, Instant)>> = RefCell::new(HashMap::new());
+}
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -35,6 +42,10 @@ struct Args {
 
     #[arg(long, default_value = "4")]
     temp_flag: String,
+
+    /// 网卡名称，用于读取实时网速 (如: wan, eth0, br-lan)
+    #[arg(long, default_value = "wan")]
+    net_interface: String,
 }
 
 fn set_timezone_from_config() -> Result<()> {
@@ -91,56 +102,113 @@ async fn main() -> Result<()> {
             }
         });
 
-    let mut sigterm = signal(SignalKind::terminate())?;
-    let mut sigint = signal(SignalKind::interrupt())?;
-    let mut sighup = signal(SignalKind::hangup())?;
+    // 使用 tokio 信号处理 (如果 Unix 平台)
+    #[cfg(unix)]
+    {
+        use tokio::signal::unix::{signal, SignalKind};
+        let mut sigterm = signal(SignalKind::terminate())?;
+        let mut sigint = signal(SignalKind::interrupt())?;
+        let mut sighup = signal(SignalKind::hangup())?;
 
-    loop {
-        tokio::select! {
-            _ = sigterm.recv() => {
-                screen.power(false, 0)?;
-                break;
-            },
+        loop {
+            tokio::select! {
+                _ = sigterm.recv() => {
+                    screen.power(false, 0)?;
+                    break;
+                },
 
-            _ = sigint.recv() => {
-                screen.power(false, 0)?;
-                break;
-            },
+                _ = sigint.recv() => {
+                    screen.power(false, 0)?;
+                    break;
+                },
 
-            _ = sighup.recv() => {
-                screen.power(false, 0)?;
-                break;
-            },
+                _ = sighup.recv() => {
+                    screen.power(false, 0)?;
+                    break;
+                },
 
-            _ = process_options(&mut screen, &args, status_flag, &client) => {},
+                _ = process_options(&mut screen, &args, status_flag, &client) => {},
+            }
         }
+    }
+
+    #[cfg(not(unix))]
+    {
+        // 非 Unix 平台直接循环处理
+        process_options(&mut screen, &args, status_flag, &client).await?;
     }
 
     Ok(())
 }
 
-/// 获取并格式化 Netdata 流量数据
-/// direction: "received" 下载， "sent" 上传
-async fn fetch_netdata_traffic(client: &Client, direction: &str) -> Option<String> {
-    let url = "http://10.0.0.1:19999/api/v1/allmetrics?format=json&filter=net.wan";
+// ==========================================
+// 网速获取函数 (基于 /proc/net/dev)
+// ==========================================
 
-    let resp = client.get(url).send().await.ok()?;
-
-    let json: Value = resp.json().await.ok()?;
-
-    let raw_value = json["net.wan"]["dimensions"][direction]["value"]
-        .as_f64()?;
-
-    // Netdata sent 方向值为负数，取绝对值
-    // 单位：raw_value 为 kilobits/s，/8 转 KB/s
-    let kb_s = (raw_value / 8.0).abs();
-
-    // 阈值1000保证数字不超过3位，转换用1024（1M = 1024K）
-    if kb_s >= 1000.0 {
-        Some(format!("{:.1}M", kb_s / 1024.0))
+/// 格式化网速为可读字符串
+fn format_bytes_speed(bytes_per_sec: f64) -> String {
+    if bytes_per_sec > 1_048_576.0 {
+        format!("{:.1}M", bytes_per_sec / 1_048_576.0)
+    } else if bytes_per_sec > 1024.0 {
+        format!("{:.0}K", bytes_per_sec / 1024.0)
     } else {
-        Some(format!("{:.0}K", kb_s))
+        format!("{:.0}B", bytes_per_sec)
     }
+}
+
+/// 读取指定网卡的字节数 (rx_bytes, tx_bytes)
+fn read_net_bytes_for(target_iface: &str) -> (u64, u64) {
+    if let Ok(content) = fs::read_to_string("/proc/net/dev") {
+        for line in content.lines() {
+            if line.contains(target_iface) {
+                if let Some((_, data)) = line.split_once(':') {
+                    let parts: Vec<&str> = data.split_whitespace().collect();
+                    if parts.len() >= 9 {
+                        let rx = parts[0].parse::<u64>().unwrap_or(0);  // 接收字节数
+                        let tx = parts[8].parse::<u64>().unwrap_or(0);  // 发送字节数
+                        return (rx, tx);
+                    }
+                }
+            }
+        }
+    }
+    (0, 0)
+}
+
+/// 获取指定网卡的实时网速字符串
+/// mode: 0 = 下载 (rx), 1 = 上传 (tx)
+fn get_speed_string(mode: u8, target_iface: &str) -> String {
+    let (curr_rx, curr_tx) = read_net_bytes_for(target_iface);
+    let now = Instant::now();
+
+    NET_SPEED_CACHE.with(|cache| {
+        let mut cache = cache.borrow_mut();
+
+        // 获取或初始化该网卡的缓存数据
+        let (last_rx, last_tx, last_time) = cache
+            .entry(target_iface.to_string())
+            .or_insert((curr_rx, curr_tx, now));
+
+        let duration = now.duration_since(*last_time).as_secs_f64();
+
+        // 防抖与异常防护
+        if duration < 0.1 || duration > 30.0 || *last_rx == 0 {
+            cache.insert(target_iface.to_string(), (curr_rx, curr_tx, now));
+            return format_bytes_speed(0.0);
+        }
+
+        // 计算网速
+        let speed = if mode == 0 {
+            (curr_rx.saturating_sub(*last_rx)) as f64 / duration  // 下载
+        } else {
+            (curr_tx.saturating_sub(*last_tx)) as f64 / duration  // 上传
+        };
+
+        // 更新缓存
+        cache.insert(target_iface.to_string(), (curr_rx, curr_tx, now));
+
+        format_bytes_speed(speed)
+    })
 }
 
 async fn process_options(
@@ -210,37 +278,27 @@ async fn process_options(
 
                     while start.elapsed() < Duration::from_secs(args.seconds) {
                         // 显示下载
-                        let speed = fetch_netdata_traffic(client, "received").await;
-                        let display_text = match speed {
-                            Some(s) => s,
-                            None => "--".to_string(),
-                        };
-                        let _ = screen.write_data(&display_text, 8);
+                        let speed = get_speed_string(0, &args.net_interface);
+                        let _ = screen.write_data(&speed, 8);
                         time::sleep(Duration::from_secs(half)).await;
 
                         // 显示上传
-                        let speed = fetch_netdata_traffic(client, "sent").await;
-                        let display_text = match speed {
-                            Some(s) => s,
-                            None => "--".to_string(),
-                        };
-                        let _ = screen.write_data(&display_text, 4);
+                        let speed = get_speed_string(1, &args.net_interface);
+                        let _ = screen.write_data(&speed, 4);
                         time::sleep(Duration::from_secs(half)).await;
                     }
 
                 } else if args.value == "d" {
                     // 只显示下载
-                    if let Some(speed) = fetch_netdata_traffic(client, "received").await {
-                        screen.write_data(&speed, 8)?;
-                        time::sleep(Duration::from_secs(args.seconds)).await;
-                    }
+                    let speed = get_speed_string(0, &args.net_interface);
+                    screen.write_data(&speed, 8)?;
+                    time::sleep(Duration::from_secs(args.seconds)).await;
 
                 } else if args.value == "u" {
                     // 只显示上传
-                    if let Some(speed) = fetch_netdata_traffic(client, "sent").await {
-                        screen.write_data(&speed, 4)?;
-                        time::sleep(Duration::from_secs(args.seconds)).await;
-                    }
+                    let speed = get_speed_string(1, &args.net_interface);
+                    screen.write_data(&speed, 4)?;
+                    time::sleep(Duration::from_secs(args.seconds)).await;
 
                 } else {
 
