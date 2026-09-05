@@ -153,7 +153,7 @@ fn format_bytes_speed(bytes_per_sec: f64) -> String {
     } else if bytes_per_sec > 1024.0 {
         format!("{:.0}K", bytes_per_sec / 1024.0)
     } else {
-        format!("{:.0}B", bytes_per_sec)
+        format!("{:.1}K", bytes_per_sec / 1024.0)
     }
 }
 
@@ -309,7 +309,7 @@ async fn process_options(
                 let start = Instant::now();
                 while start.elapsed() < Duration::from_secs(args.seconds) {
                     let count = get_connection_count();
-                    let text = format!(":{}", count);
+                    let text = format!("c:{}", count);  // 显示为 c:123 (经 to_uppercase 后为 C:123)
                     screen.write_data(&text, status)?;
                     time::sleep(Duration::from_secs(1)).await;
                 }
