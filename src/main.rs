@@ -214,6 +214,16 @@ fn get_speed_string(mode: u8, target_iface: &str) -> String {
     })
 }
 
+/// 读取 netfilter conntrack 表的当前活动连接数
+/// 数据源: /proc/sys/net/netfilter/nf_conntrack_count (与 OpenWrt 首页状态一致)
+/// 注意: 需要内核加载 nf_conntrack 模块；模块未加载时返回 0
+fn get_connection_count() -> u32 {
+    fs::read_to_string("/proc/sys/net/netfilter/nf_conntrack_count")
+        .ok()
+        .and_then(|s| s.trim().parse::<u32>().ok())
+        .unwrap_or(0)
+}
+
 async fn process_options(
     screen: &mut led_screen::LedScreen,
     args: &Args,
@@ -272,43 +282,42 @@ async fn process_options(
                 }
             }
 
-            "string" => {
-
-                if args.value == "ud" {
-                    // 每个周期：下载、上传各显示一半时间
-                    let half = args.seconds / 2;
-                    let start = Instant::now();
-
-                    while start.elapsed() < Duration::from_secs(args.seconds) {
-                        // 显示下载
-                        let speed = get_speed_string(0, &args.net_interface);
-                        let _ = screen.write_data(&speed, 8);
-                        time::sleep(Duration::from_secs(half)).await;
-
-                        // 显示上传
-                        let speed = get_speed_string(1, &args.net_interface);
-                        let _ = screen.write_data(&speed, 4);
-                        time::sleep(Duration::from_secs(half)).await;
-                    }
-
-                } else if args.value == "d" {
-                    // 只显示下载
-                    let speed = get_speed_string(0, &args.net_interface);
-                    screen.write_data(&speed, 8)?;
-                    time::sleep(Duration::from_secs(args.seconds)).await;
-
-                } else if args.value == "u" {
-                    // 只显示上传
+            "upload" => {
+                // 实时显示上传网速（每个 IntervalTime 周期内每 1 秒刷新一次）
+                let start = Instant::now();
+                while start.elapsed() < Duration::from_secs(args.seconds) {
                     let speed = get_speed_string(1, &args.net_interface);
-                    screen.write_data(&speed, 4)?;
-                    time::sleep(Duration::from_secs(args.seconds)).await;
-
-                } else {
-
-                    screen.write_data(&args.value, status)?;
-
-                    time::sleep(Duration::from_secs(args.seconds)).await;
+                    // 保留用户配置的侧边指示灯，并点亮上传指示灯 (bit 4)
+                    screen.write_data(&speed, status | 4)?;
+                    time::sleep(Duration::from_secs(1)).await;
                 }
+            }
+
+            "download" => {
+                // 实时显示下载网速（每个 IntervalTime 周期内每 1 秒刷新一次）
+                let start = Instant::now();
+                while start.elapsed() < Duration::from_secs(args.seconds) {
+                    let speed = get_speed_string(0, &args.net_interface);
+                    // 保留用户配置的侧边指示灯，并点亮下载指示灯 (bit 8)
+                    screen.write_data(&speed, status | 8)?;
+                    time::sleep(Duration::from_secs(1)).await;
+                }
+            }
+
+            "connection" => {
+                // 实时显示当前 TCP 总连接数（每 1 秒刷新一次）
+                let start = Instant::now();
+                while start.elapsed() < Duration::from_secs(args.seconds) {
+                    let count = get_connection_count();
+                    let text = format!(":{}", count);
+                    screen.write_data(&text, status)?;
+                    time::sleep(Duration::from_secs(1)).await;
+                }
+            }
+
+            "string" => {
+                screen.write_data(&args.value, status)?;
+                time::sleep(Duration::from_secs(args.seconds)).await;
             }
 
             "getByUrl" => {

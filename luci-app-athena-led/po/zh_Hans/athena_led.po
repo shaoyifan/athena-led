@@ -17,7 +17,7 @@ msgstr "雅典娜 LED 控制"
 msgid "Brightness Level"
 msgstr "亮度等级"
 
-#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:140
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:143
 msgid "CPU"
 msgstr "CPU"
 
@@ -28,6 +28,10 @@ msgstr "时钟指示灯"
 #: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:44
 msgid "Collecting data..."
 msgstr "收集数据中..."
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:118
+msgid "Connection Count"
+msgstr "活动连接"
 
 #: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:112
 msgid "Current Date"
@@ -41,12 +45,12 @@ msgstr "当前时间"
 msgid "Current Time (Blinking)"
 msgstr "当前时间（闪烁）"
 
-#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:116
 #: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:119
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:122
 msgid "Custom Text"
 msgstr "自定义文本"
 
-#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:142
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:145
 msgid "DDESS-TOP"
 msgstr "DDESS-TOP"
 
@@ -58,15 +62,19 @@ msgstr "设备温度"
 msgid "Download Indicator Light"
 msgstr "下载指示灯"
 
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:117
+msgid "Download Speed"
+msgstr "下载网速"
+
 #: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:72
 msgid "Enabled"
 msgstr "启用"
 
-#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:130
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:133
 msgid "Enter your api url here"
 msgstr "请输入接口地址"
 
-#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:124
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:127
 msgid "Enter your message here"
 msgstr "请输入显示内容"
 
@@ -102,7 +110,7 @@ msgstr "LED 未运行"
 msgid "LED RUNNING"
 msgstr "LED 运行中"
 
-#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:141
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:144
 msgid "LPASS"
 msgstr "LPASS"
 
@@ -110,16 +118,16 @@ msgstr "LPASS"
 msgid "Medal Indicator Light"
 msgstr "奖牌指示灯"
 
-#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:137
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:140
 msgid "NSS"
 msgstr "NSS"
 
-#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:136
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:139
 msgid "NSS-TOP"
 msgstr "NSS-TOP"
 
-#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:117
-#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:126
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:120
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:129
 msgid "Remote Text"
 msgstr "远程文本"
 
@@ -131,11 +139,11 @@ msgstr "远程文本"
 msgid "Seconds"
 msgstr "秒"
 
-#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:133
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:136
 msgid "Select the sensor displayed in the 'Device Temperature' mode"
 msgstr "选择 '设备温度' 模式下显示的传感器"
 
-#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:127
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:130
 msgid "Set the URL for retrieving text in 'Remote Text' mode"
 msgstr "设置 '远程文本' 模式下获取文本的 URL"
 
@@ -143,7 +151,7 @@ msgstr "设置 '远程文本' 模式下获取文本的 URL"
 msgid "Set the brightness level of the LED screen"
 msgstr "设置 LED 屏幕的亮度等级"
 
-#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:120
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:123
 msgid ""
 "Set the content displayed in 'Custom Text' mode (allowed characters: [a~z], "
 "[0~9], [+-*/=.:：℃] )"
@@ -166,7 +174,7 @@ msgstr "设置 LED 屏幕的刷新时间间隔"
 msgid "Side Status Indicator"
 msgstr "侧边状态指示灯"
 
-#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:132
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:135
 msgid "Temperature Sensor"
 msgstr "温度传感器"
 
@@ -178,10 +186,14 @@ msgstr "未找到 athena-led 二进制文件。请下载该文件。"
 msgid "Upload Indicator Light"
 msgstr "上传指示灯"
 
-#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:138
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:116
+msgid "Upload Speed"
+msgstr "上传网速"
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:141
 msgid "WCSS-PHYA0"
 msgstr "WCSS-PHYA0"
 
-#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:139
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:142
 msgid "WCSS-PHYA1"
 msgstr "WCSS-PHYA1"
