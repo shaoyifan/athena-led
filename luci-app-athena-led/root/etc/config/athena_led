@@ -1,0 +1,10 @@
+
+config athena_led 'config'
+	option Enabled '0'
+	option IntervalTime '5'
+	option LightLevel '5'
+	option SideStatusIndicator ''
+	option DisplayMode 'date timeBlink'
+	option CustomText 'abcdefghijklmnopqrstuvwxyz0123456789+-*/=.:：℃'
+	option RemoteText 'https://ifconfig.me'
+	option TemperatureSensor '4'

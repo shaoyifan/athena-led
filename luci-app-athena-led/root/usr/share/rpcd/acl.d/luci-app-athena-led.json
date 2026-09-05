@@ -1,0 +1,25 @@
+{
+	"luci-app-athena-led": {
+		"description": "Grant access to LuCI app athena-led",
+		"read": {
+			"file": {
+				"/usr/sbin/athena-led": [
+					"read"
+				]
+			},
+			"uci": [
+				"athena_led"
+			],
+			"ubus": {
+				"service": [
+					"list"
+				]
+			}
+		},
+		"write": {
+			"uci": [
+				"athena_led"
+			]
+		}
+	}
+}

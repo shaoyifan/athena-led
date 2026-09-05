@@ -1,0 +1,13 @@
+{
+	"admin/system/athena_led": {
+		"title": "Athena LED Ctrl",
+		"order": 61,
+		"action": {
+			"type": "view",
+			"path": "athena_led"
+		},
+		"depends": {
+			"acl": [ "luci-app-athena-led" ]
+		}
+	}
+}

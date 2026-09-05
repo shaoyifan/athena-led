@@ -1,0 +1,186 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=UTF-8"
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:36
+#: luci-app-athena-led/root/usr/share/luci/menu.d/luci-app-athena-led.json:3
+msgid "Athena LED Ctrl"
+msgstr ""
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:90
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:91
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:92
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:93
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:94
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:95
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:96
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:97
+msgid "Brightness Level"
+msgstr ""
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:140
+msgid "CPU"
+msgstr ""
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:103
+msgid "Clock Indicator Light"
+msgstr ""
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:44
+msgid "Collecting data..."
+msgstr ""
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:112
+msgid "Current Date"
+msgstr ""
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:113
+msgid "Current Time"
+msgstr ""
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:114
+msgid "Current Time (Blinking)"
+msgstr ""
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:116
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:119
+msgid "Custom Text"
+msgstr ""
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:142
+msgid "DDESS-TOP"
+msgstr ""
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:115
+msgid "Device Temperature"
+msgstr ""
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:106
+msgid "Download Indicator Light"
+msgstr ""
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:72
+msgid "Enabled"
+msgstr ""
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:130
+msgid "Enter your api url here"
+msgstr ""
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:124
+msgid "Enter your message here"
+msgstr ""
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:60
+msgid "Error loading status"
+msgstr ""
+
+#: luci-app-athena-led/root/usr/share/rpcd/acl.d/luci-app-athena-led.json:3
+msgid "Grant access to LuCI app athena-led"
+msgstr ""
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:37
+msgid "JDCloud AX6600 LED Screen Ctrl"
+msgstr ""
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:108
+msgid "LED Display Mode"
+msgstr ""
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:76
+msgid "LED Interval Time"
+msgstr ""
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:86
+msgid "LED Light Level"
+msgstr ""
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:57
+msgid "LED NOT RUNNING"
+msgstr ""
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:57
+msgid "LED RUNNING"
+msgstr ""
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:141
+msgid "LPASS"
+msgstr ""
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:104
+msgid "Medal Indicator Light"
+msgstr ""
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:137
+msgid "NSS"
+msgstr ""
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:136
+msgid "NSS-TOP"
+msgstr ""
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:117
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:126
+msgid "Remote Text"
+msgstr ""
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:80
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:81
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:82
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:83
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:84
+msgid "Seconds"
+msgstr ""
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:133
+msgid "Select the sensor displayed in the 'Device Temperature' mode"
+msgstr ""
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:127
+msgid "Set the URL for retrieving text in 'Remote Text' mode"
+msgstr ""
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:87
+msgid "Set the brightness level of the LED screen"
+msgstr ""
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:120
+msgid ""
+"Set the content displayed in 'Custom Text' mode (allowed characters: [a~z], "
+"[0~9], [+-*/=.:：℃] )"
+msgstr ""
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:109
+msgid "Set the display mode of the LED screen"
+msgstr ""
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:100
+msgid "Set the display mode of the side status indicator light"
+msgstr ""
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:77
+msgid "Set the refresh interval of the LED screen"
+msgstr ""
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:99
+msgid "Side Status Indicator"
+msgstr ""
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:132
+msgid "Temperature Sensor"
+msgstr ""
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:30
+msgid "The athena-led binary was not found. Please download the file."
+msgstr ""
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:105
+msgid "Upload Indicator Light"
+msgstr ""
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:138
+msgid "WCSS-PHYA0"
+msgstr ""
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:139
+msgid "WCSS-PHYA1"
+msgstr ""
