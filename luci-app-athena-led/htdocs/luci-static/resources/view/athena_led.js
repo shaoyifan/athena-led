@@ -116,6 +116,7 @@ return view.extend({
 		o.value('upload', _('Upload Speed'));
 		o.value('download', _('Download Speed'));
 		o.value('connection', _('Connection Count'));
+		o.value('nss', _('NSS Load'));
 		o.value('string', _('Custom Text'));
 		o.value('getByUrl', _('Remote Text'));
 

@@ -33,6 +33,10 @@ msgstr "收集数据中..."
 msgid "Connection Count"
 msgstr "活动连接"
 
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:119
+msgid "NSS Load"
+msgstr "NSS 负载"
+
 #: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:112
 msgid "Current Date"
 msgstr "当前日期"

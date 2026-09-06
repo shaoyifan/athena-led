@@ -33,6 +33,10 @@ msgstr ""
 msgid "Connection Count"
 msgstr ""
 
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:119
+msgid "NSS Load"
+msgstr ""
+
 #: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:112
 msgid "Current Date"
 msgstr ""

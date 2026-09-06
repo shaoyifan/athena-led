@@ -224,6 +224,21 @@ fn get_connection_count() -> u32 {
         .unwrap_or(0)
 }
 
+/// 读取 NSS 固件整体 CPU 负载 (如 "99%")
+/// 数据源: /sys/kernel/debug/qca-nss-drv/stats/cpu_load_ubi 第 6 行第 2 列
+/// 等价于 shell: awk 'NR == 6 { print $2; exit }' /sys/kernel/debug/qca-nss-drv/stats/cpu_load_ubi
+/// 注意: 需要内核加载 qca-nss-drv 且 debugfs 已挂载；读不到时返回 None
+fn get_nss_load() -> Option<String> {
+    fs::read_to_string("/sys/kernel/debug/qca-nss-drv/stats/cpu_load_ubi")
+        .ok()
+        .and_then(|s| {
+            s.lines()
+                .nth(5)                              // NR == 6 (0 起始)
+                .and_then(|l| l.split_whitespace().nth(1))  // $2
+                .map(|v| v.to_string())
+        })
+}
+
 async fn process_options(
     screen: &mut led_screen::LedScreen,
     args: &Args,
@@ -310,6 +325,19 @@ async fn process_options(
                 while start.elapsed() < Duration::from_secs(args.seconds) {
                     let count = get_connection_count();
                     let text = format!("# {}", count);  // 显示为 #123 (# 不受 to_uppercase 影响)
+                    screen.write_data(&text, status)?;
+                    time::sleep(Duration::from_secs(1)).await;
+                }
+            }
+
+            "nss" => {
+                // 实时显示 NSS 负载 NS:99% （每 1 秒刷新一次）
+                let start = Instant::now();
+                while start.elapsed() < Duration::from_secs(args.seconds) {
+                    let text = match get_nss_load() {
+                        Some(v) => format!("NS:{}", v),
+                        None => "NS:--".to_string(),  // qca-nss-drv 未加载 / debugfs 未挂载
+                    };
                     screen.write_data(&text, status)?;
                     time::sleep(Duration::from_secs(1)).await;
                 }
