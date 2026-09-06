@@ -3,6 +3,8 @@
 [简体中文](README_zh.md) | [English](README.md)
 
 [原项目](https://github.com/haipengno1/athena-led) 的分支，用于在 OpenWrt 设备上控制 LED 点阵显示屏。
+### 本项目luci基于 Sh1rokoDev/luci-app-athena-led的LuCI2-JS分支
+
 
 ## 功能特性
 
