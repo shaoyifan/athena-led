@@ -405,8 +405,7 @@ fn read_wifi_temp(phy_idx: usize) -> Option<f64> {
     let entries = fs::read_dir(&phy_dir).ok()?;
 
     for e in entries.flatten() {
-        let name_str = e.file_name().to_string_lossy();
-        if name_str.starts_with("hwmon") && e.path().is_dir() {
+        if e.file_name().to_string_lossy().starts_with("hwmon") && e.path().is_dir() {
             return read_temp_celsius(
                 &e.path().join("temp1_input").to_string_lossy()
             );
