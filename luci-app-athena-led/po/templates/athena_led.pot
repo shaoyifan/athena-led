@@ -154,7 +154,7 @@ msgstr ""
 #: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:123
 msgid ""
 "Set the content displayed in 'Custom Text' mode (allowed characters: [a~z], "
-"[0~9], [+-*/=.:：℃] )"
+"[0~9], [+-*/=#.:：℃] )"
 msgstr ""
 
 #: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:109

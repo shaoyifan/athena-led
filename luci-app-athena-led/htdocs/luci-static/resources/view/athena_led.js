@@ -120,7 +120,7 @@ return view.extend({
 		o.value('getByUrl', _('Remote Text'));
 
 		o = s.option(form.Value, 'CustomText', _('Custom Text'),
-			_('Set the content displayed in \'Custom Text\' mode (allowed characters: [a~z], [0~9], [+-*/=.:：℃] )')
+			_('Set the content displayed in \'Custom Text\' mode (allowed characters: [a~z], [0~9], [+-*/=#.:：℃] )')
 		);
 		o.default = 'abcdefghijklmnopqrstuvwxyz0123456789+-*/=.:：℃';
 		o.rmempty = false;

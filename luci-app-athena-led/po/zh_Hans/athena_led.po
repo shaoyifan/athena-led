@@ -154,9 +154,9 @@ msgstr "设置 LED 屏幕的亮度等级"
 #: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:123
 msgid ""
 "Set the content displayed in 'Custom Text' mode (allowed characters: [a~z], "
-"[0~9], [+-*/=.:：℃] )"
+"[0~9], [+-*/=#.:：℃] )"
 msgstr ""
-"设置 '自定义文本' 模式下显示的内容（允许的字符：[a~z]、[0~9]、[+-*/=.:：℃]）"
+"设置 '自定义文本' 模式下显示的内容（允许的字符：[a~z]、[0~9]、[+-*/=#.:：℃]）"
 
 #: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:109
 msgid "Set the display mode of the LED screen"
