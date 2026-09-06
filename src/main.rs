@@ -309,7 +309,7 @@ async fn process_options(
                 let start = Instant::now();
                 while start.elapsed() < Duration::from_secs(args.seconds) {
                     let count = get_connection_count();
-                    let text = format!("#{}", count);  // 显示为 #123 (# 不受 to_uppercase 影响)
+                    let text = format!("# {}", count);  // 显示为 #123 (# 不受 to_uppercase 影响)
                     screen.write_data(&text, status)?;
                     time::sleep(Duration::from_secs(1)).await;
                 }
