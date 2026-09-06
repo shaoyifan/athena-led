@@ -344,30 +344,41 @@ fn get_temp(temp_flags: &str) -> Result<Option<String>> {
 
     let mut result = String::new();
 
-    for i in 0..=6 {
-
-        if !temp_flags.contains(&i.to_string()) {
-            continue;
-        }
-
-        let temp_path =
-            format!("/sys/class/thermal/thermal_zone{}/temp", i);
-
-        if let Ok(temp_str) = std::fs::read_to_string(&temp_path) {
-
-            if let Ok(temp) = temp_str.trim().parse::<f64>() {
-
-                let temp_celsius = temp / 1000.0;
-
-                // 只有真正追加内容时才加空格
-                if !result.is_empty() {
-                    result.push(' ');
+    // 解析 UCI MultiValue: 空格分隔的 token
+    //  0~6 → /sys/class/thermal/thermal_zone{N}/temp
+    //  7   → WiFi 5.8G  (ieee80211 phy0)   ← ipq60xx 三频机型
+    //  8   → WiFi 2.4G  (ieee80211 phy1)
+    //  9   → WiFi 5.2G  (ieee80211 phy2)
+    //  ipq60xx / ipq8074 / mt76 等 SoC 的常见布局都能匹配
+    for token in temp_flags.split_whitespace() {
+        let temp_celsius = match token {
+            "7" => read_wifi_temp(0),
+            "8" => read_wifi_temp(1),
+            "9" => read_wifi_temp(2),
+            n => {
+                if let Ok(idx) = n.parse::<u32>() {
+                    if idx <= 6 {
+                        let path =
+                            format!("/sys/class/thermal/thermal_zone{}/temp", idx);
+                        read_temp_celsius(&path)
+                    } else {
+                        None
+                    }
+                } else {
+                    None
                 }
-
-                result.push_str(
-                    &format!("{:.1}℃", temp_celsius)
-                );
             }
+        };
+
+        if let Some(c) = temp_celsius {
+
+            if !result.is_empty() {
+                result.push(' ');
+            }
+
+            result.push_str(
+                &format!("{:.1}℃", c)
+            );
         }
     }
 
@@ -378,4 +389,28 @@ fn get_temp(temp_flags: &str) -> Result<Option<String>> {
             Some(result)
         }
     )
+}
+
+/// 读取 `/sys/.../temp*_input` (毫摄氏度) 并换算为摄氏度
+fn read_temp_celsius(path: &str) -> Option<f64> {
+    let s = fs::read_to_string(path).ok()?;
+    let raw = s.trim().parse::<f64>().ok()?;
+    Some(raw / 1000.0)
+}
+
+/// 读取指定 phy 的 WiFi 芯片温度
+/// 取 /sys/class/ieee80211/phy{N}/ 下第一个 hwmon* 子目录里的 temp1_input
+fn read_wifi_temp(phy_idx: usize) -> Option<f64> {
+    let phy_dir = format!("/sys/class/ieee80211/phy{}", phy_idx);
+    let entries = fs::read_dir(&phy_dir).ok()?;
+
+    for e in entries.flatten() {
+        let name_str = e.file_name().to_string_lossy();
+        if name_str.starts_with("hwmon") && e.path().is_dir() {
+            return read_temp_celsius(
+                &e.path().join("temp1_input").to_string_lossy()
+            );
+        }
+    }
+    None
 }

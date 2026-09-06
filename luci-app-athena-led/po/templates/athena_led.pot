@@ -52,6 +52,15 @@ msgstr ""
 
 #: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:145
 msgid "DDESS-TOP"
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:146
+msgid "WiFi 5.8G"
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:147
+msgid "WiFi 2.4G"
+
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:148
+msgid "WiFi 5.2G"
 msgstr ""
 
 #: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:115

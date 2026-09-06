@@ -143,6 +143,9 @@ return view.extend({
 		o.value('4', _('CPU'));
 		o.value('5', _('LPASS'));
 		o.value('6', _('DDESS-TOP'));
+		o.value('7', _('WiFi 5.8G'));
+		o.value('8', _('WiFi 2.4G'));
+		o.value('9', _('WiFi 5.2G'));
 
 		return m.render();
 	}
