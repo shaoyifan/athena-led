@@ -331,12 +331,12 @@ async fn process_options(
             }
 
             "nss" => {
-                // 实时显示 NSS 负载 NS:99% （每 1 秒刷新一次）
+                // 实时显示 NSS 负载 ▶99% （每 1 秒刷新一次）
                 let start = Instant::now();
                 while start.elapsed() < Duration::from_secs(args.seconds) {
                     let text = match get_nss_load() {
-                        Some(v) => format!("NS:{}", v),
-                        None => "NS:--".to_string(),  // qca-nss-drv 未加载 / debugfs 未挂载
+                        Some(v) => format!("▶ {}", v),           // ▶99%
+                        None => "▶ --".to_string(),              // qca-nss-drv 未加载 / debugfs 未挂载
                     };
                     screen.write_data(&text, status)?;
                     time::sleep(Duration::from_secs(1)).await;
