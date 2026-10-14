@@ -318,15 +318,6 @@ async fn process_options(
                 }
             }
 
-            "timeSec" => {
-                // 实时显示含秒时间 (HH:MM:SS)，冒号为 1 字节字形，整串 26 字节可静态显示
-                let time = Local::now().format("%H:%M:%S").to_string();
-
-                screen.write_data(&time, status)?;
-
-                time::sleep(Duration::from_secs(args.seconds)).await;
-            }
-
             "temp" => {
                 if let Some(temp) = get_temp(&args.temp_flag)? {
 
