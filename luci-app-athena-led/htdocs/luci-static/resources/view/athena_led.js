@@ -112,6 +112,7 @@ return view.extend({
 		o.value('date', _('Current Date'));
 		o.value('time', _('Current Time'));
 		o.value('timeBlink', _('Current Time (Blinking)'));
+		o.value('timeSec', _('Current Time with Seconds'));
 		o.value('temp', _('Device Temperature'));
 		o.value('upload', _('Upload Speed'));
 		o.value('download', _('Download Speed'));

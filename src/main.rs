@@ -15,10 +15,13 @@ use tokio::time;  // 用于 time::sleep()
 // ==========================================
 // 网速缓存 (用于计算实时网速)
 // ==========================================
-// Key: 网卡名, Value: (上次RX字节数, 上次TX字节数, 上次记录时间)
+// Key: 网卡名, Value: (上次RX字节数, 上次TX字节数, 上次记录时间, 平滑后RX速率, 平滑后TX速率, 是否已有效)
 thread_local! {
-    static NET_SPEED_CACHE: RefCell<HashMap<String, (u64, u64, Instant)>> = RefCell::new(HashMap::new());
+    static NET_SPEED_CACHE: RefCell<HashMap<String, (u64, u64, Instant, f64, f64, bool)>> = RefCell::new(HashMap::new());
 }
+
+/// 网速 EMA 平滑窗口（秒），移植自 C 版 monitor.c::net_smoothing_secs
+const NET_SMOOTHING_SECS: f64 = 2.0;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -178,7 +181,20 @@ fn read_net_bytes_for(target_iface: &str) -> (u64, u64) {
     (0, 0)
 }
 
-/// 获取指定网卡的实时网速字符串
+/// EMA 指数移动平均平滑 (移植自 C 版 monitor.c::smooth_rate)
+/// current: 上一帧平滑值; sample: 本次原始采样; dt: 距上次采样秒数; seconds: 平滑窗口
+fn smooth_rate(current: f64, sample: f64, dt: f64, seconds: f64) -> f64 {
+    if seconds <= 0.0 {
+        return sample;
+    }
+    if dt <= 0.0 {
+        return current;
+    }
+    let alpha = 1.0 - (-dt / seconds).exp();
+    current + alpha * (sample - current)
+}
+
+/// 获取指定网卡的实时网速字符串 (差值法 + EMA 平滑)
 /// mode: 0 = 下载 (rx), 1 = 上传 (tx)
 fn get_speed_string(mode: u8, target_iface: &str) -> String {
     let (curr_rx, curr_tx) = read_net_bytes_for(target_iface);
@@ -187,29 +203,43 @@ fn get_speed_string(mode: u8, target_iface: &str) -> String {
     NET_SPEED_CACHE.with(|cache| {
         let mut cache = cache.borrow_mut();
 
-        // 先取出旧值（克隆，避免借用冲突）
-        let (last_rx, last_tx, last_time) = cache.get(target_iface)
-            .map(|(rx, tx, t)| (*rx, *tx, *t))
-            .unwrap_or((0, 0, now));
+        // (last_rx, last_tx, last_time, smooth_rx, smooth_tx, valid)
+        let (last_rx, last_tx, last_time, smooth_rx, smooth_tx, valid) =
+            cache.get(target_iface)
+                .map(|e| (e.0, e.1, e.2, e.3, e.4, e.5))
+                .unwrap_or((0, 0, now, 0.0, 0.0, false));
 
         let duration = now.duration_since(last_time).as_secs_f64();
+        // 采样窗有效：间隔合理、基准非 0（避免首次 / 计数回绕误算）
+        let window_ok = duration >= 0.1 && duration <= 30.0 && last_rx != 0;
 
-        // 防抖与异常防护：首次调用或时间间隔异常
-        if duration < 0.1 || duration > 30.0 || last_rx == 0 {
-            cache.insert(target_iface.to_string(), (curr_rx, curr_tx, now));
-            return format_bytes_speed(0.0);
-        }
+        // 各方向独立计算本次原始采样（某方向计数回绕不影响另一方向）
+        let s_rx = if window_ok && curr_rx >= last_rx {
+            (curr_rx - last_rx) as f64 / duration
+        } else { 0.0 };
+        let s_tx = if window_ok && curr_tx >= last_tx {
+            (curr_tx - last_tx) as f64 / duration
+        } else { 0.0 };
 
-        // 计算网速
-        let speed = if mode == 0 {
-            (curr_rx.saturating_sub(last_rx)) as f64 / duration  // 下载
+        // EMA 平滑：首次有效采样直接采用原始值，之后逐步收敛（与 C 版 net_rates_valid 首帧行为一致）
+        let (out_rx, out_tx) = if valid && window_ok {
+            (
+                smooth_rate(smooth_rx, s_rx, duration, NET_SMOOTHING_SECS),
+                smooth_rate(smooth_tx, s_tx, duration, NET_SMOOTHING_SECS),
+            )
+        } else if window_ok {
+            (s_rx, s_tx)
         } else {
-            (curr_tx.saturating_sub(last_tx)) as f64 / duration  // 上传
+            (smooth_rx, smooth_tx)  // 异常/首次：维持上次平滑值（或 0）
         };
 
-        // 更新缓存
-        cache.insert(target_iface.to_string(), (curr_rx, curr_tx, now));
+        let new_valid = valid || window_ok;
+        cache.insert(
+            target_iface.to_string(),
+            (curr_rx, curr_tx, now, out_rx, out_tx, new_valid),
+        );
 
+        let speed = if mode == 0 { out_rx } else { out_tx };
         format_bytes_speed(speed)
     })
 }
@@ -286,6 +316,15 @@ async fn process_options(
 
                     time::sleep(Duration::from_secs(1)).await;
                 }
+            }
+
+            "timeSec" => {
+                // 实时显示含秒时间 (HH:MM:SS)，冒号为 1 字节字形，整串 26 字节可静态显示
+                let time = Local::now().format("%H:%M:%S").to_string();
+
+                screen.write_data(&time, status)?;
+
+                time::sleep(Duration::from_secs(args.seconds)).await;
             }
 
             "temp" => {

@@ -49,6 +49,10 @@ msgstr ""
 msgid "Current Time (Blinking)"
 msgstr ""
 
+#: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:115
+msgid "Current Time with Seconds"
+msgstr ""
+
 #: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:119
 #: luci-app-athena-led/htdocs/luci-static/resources/view/athena_led.js:122
 msgid "Custom Text"
