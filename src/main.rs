@@ -407,7 +407,7 @@ async fn process_options(
                 let start = Instant::now();
                 while start.elapsed() < Duration::from_secs(args.seconds) {
                     let text = match get_nss_load() {
-                        Some(v) => format!("▶ {}", v),           // ▶99%
+                        Some(v) => format!("▶{}%", v.trim_end_matches('%')),  // ▶99% (cpu_load_ubi 或流表百分比, 统一补 %)
                         None => "▶ --".to_string(),              // qca-nss-drv 未加载 / debugfs 未挂载
                     };
                     screen.write_data(&text, status)?;
