@@ -254,11 +254,37 @@ fn get_connection_count() -> u32 {
         .unwrap_or(0)
 }
 
-/// 读取 NSS 固件整体 CPU 负载 (如 "99%")
-/// 数据源: /sys/kernel/debug/qca-nss-drv/stats/cpu_load_ubi 第 6 行第 2 列
-/// 等价于 shell: awk 'NR == 6 { print $2; exit }' /sys/kernel/debug/qca-nss-drv/stats/cpu_load_ubi
-/// 注意: 需要内核加载 qca-nss-drv 且 debugfs 已挂载；读不到时返回 None
+/// 读取 NSS 负载百分比 (如 "99")
+/// 优先数据源: /sys/kernel/debug/qca-nss-drv/stats/cpu_load_ubi 第 6 行第 2 列
+///   等价于 shell: awk 'NR == 6 { print $2; exit }' /sys/kernel/debug/qca-nss-drv/stats/cpu_load_ubi
+/// 若该文件不存在 (qca-nss-drv 未加载 / debugfs 未挂载)，则回退到 NSS 流表:
+///   /sys/bus/platform/devices/39000000.nss/flow_stats
+///   仅当 /sys/module/nss_wifi_drv/parameters/wlan 读出且非 0 时 NSS 启用
+///   读取 nss_ipv4 nss_ipv6 nss_total nss_limit，百分比 = nss_total * 100 / nss_limit (整数取整)
+/// 读不到时返回 None
 fn get_nss_load() -> Option<String> {
+    // 1) 优先: cpu_load_ubi
+    if let Some(v) = read_cpu_load_ubi() {
+        return Some(v);
+    }
+
+    // 2) 回退: NSS 流表 (nss_wifi_drv 启用时)
+    if let Some(wlan) = fs::read_to_string("/sys/module/nss_wifi_drv/parameters/wlan")
+        .ok()
+        .and_then(|s| s.trim().parse::<u64>().ok())
+    {
+        if wlan != 0 {
+            if let Some(pct) = read_nss_flow_pct() {
+                return Some(pct);
+            }
+        }
+    }
+
+    None
+}
+
+/// cpu_load_ubi 第 6 行第 2 列 (NSS 整体 CPU 负载百分比)
+fn read_cpu_load_ubi() -> Option<String> {
     fs::read_to_string("/sys/kernel/debug/qca-nss-drv/stats/cpu_load_ubi")
         .ok()
         .and_then(|s| {
@@ -267,6 +293,22 @@ fn get_nss_load() -> Option<String> {
                 .and_then(|l| l.split_whitespace().nth(1))  // $2
                 .map(|v| v.to_string())
         })
+}
+
+/// NSS 流表: nss_total / nss_limit 转化为整数百分比
+fn read_nss_flow_pct() -> Option<String> {
+    let s = fs::read_to_string("/sys/bus/platform/devices/39000000.nss/flow_stats").ok()?;
+    let mut it = s.split_whitespace();
+    let _ipv4 = it.next()?;          // nss_ipv4 (未使用)
+    let _ipv6 = it.next()?;          // nss_ipv6 (未使用)
+    let total = it.next()?;          // nss_total
+    let limit = it.next()?;          // nss_limit
+    let total: u64 = total.parse().ok()?;
+    let limit: u64 = limit.parse().ok()?;
+    if limit == 0 {
+        return None; // 防止除零
+    }
+    Some((total * 100 / limit).to_string())
 }
 
 async fn process_options(
